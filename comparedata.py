@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+import csv
 from difflib import SequenceMatcher
 import smart_match as sm
 import time
@@ -23,6 +24,7 @@ import re
 from webdriver_manager.chrome import ChromeDriverManager
 from notifypy import Notify
 import asyncio
+import requests
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 def xbet():
@@ -31,7 +33,7 @@ def xbet():
     options.add_argument('window-size=1920x1080')
 
     rows = pd.DataFrame(columns=[
-        ['Sport','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw', 'Second to win',
+        ['Sport','Current Time','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw', 'Second to win',
          'Surplus']])
     sports = ['football','esports']
     for sport in sports:
@@ -66,8 +68,8 @@ def xbet():
                         second_team = curr_teams[1]
 
                         curr_odds = odds[i + 1].find_elements(By.CLASS_NAME, 'c-bets__inner')
-
-                        res_list = [sport,time_now,"1xbet", "1xbet", "1xbet", first_team, second_team]
+                        curr_time = datetime.datetime.now()
+                        res_list = [sport,curr_time,time_now,"1xbet", "1xbet", "1xbet", first_team, second_team]
 
                         sure = 1.0
                         sum = 0
@@ -113,7 +115,7 @@ def ggbet():
     options.add_argument('--headless')
     options.add_argument('--start-maximized')
     rows = pd.DataFrame(
-        columns=['Sport','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw',
+        columns=['Sport','Current Time','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw',
                  'Second to win', 'Surplus'])
     sports = ['football','esports']
     for sport in sports:
@@ -183,10 +185,10 @@ def ggbet():
                         third_odd = 100000000
                 time_now = row.find_element(By.CLASS_NAME,'fixtureData__text___1JMWR').text
                 # print(first_odd,second_odd,third_odd)
-
+                curr_time = datetime.datetime.now()
                 surplus = 1.0 - (1.0 / first_odd + 1.0 / second_odd + 1.0 / third_odd)
                 if first_odd + second_odd + third_odd < 200000000:
-                    rows.loc[len(rows)] = [sport,time_now,"ggbet", "ggbet", "ggbet", first_team, second_team, first_odd, second_odd, third_odd,
+                    rows.loc[len(rows)] = [sport,curr_time,time_now,"ggbet", "ggbet", "ggbet", first_team, second_team, first_odd, second_odd, third_odd,
                                            surplus]
         except:
             pass
@@ -199,7 +201,7 @@ def twobet():
     options.add_argument('window-size=1920x1080')
 
     rows = pd.DataFrame(
-        columns=['Sport','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw',
+        columns=['Sport','Current Time','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw',
                  'Second to win', 'Surplus'])
     sports = ['football','esports']
     for sport in sports:
@@ -230,8 +232,9 @@ def twobet():
                         second_team = curr_teams[1]
                         time_now = item.find_element(By.CLASS_NAME,'c-events__time.min').text
                         curr_odds = item.find_elements(By.CLASS_NAME, 'c-bets__inner')
+                        curr_time = datetime.datetime.now()
                         #print(len(curr_odds))
-                        res_list = [sport,time_now,"22bet", "22bet", "22bet", first_team, second_team]
+                        res_list = [sport,curr_time,time_now,"22bet", "22bet", "22bet", first_team, second_team]
 
                         sure = 1.0
                         sum = 0
@@ -281,7 +284,7 @@ def betwinner():
     options.add_argument('--start-maximized')
 
     rows = pd.DataFrame(
-        columns=['Sport','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw',
+        columns=['Sport','Current Time','Time','First book', 'Second book', 'Third book', 'Team №1', 'Team №2', 'First to win', 'Draw',
                  'Second to win', 'Surplus'])
     sports = ['football','esports']
     for sport in sports:
@@ -353,6 +356,9 @@ def betwinner():
     rows.to_csv("C:/Users/Re/Archive/betwinner.csv")
 def main():
     while True:
+        TOKEN = "6384288139:AAEEM7H32JXHCXq1LERJr0Grtlrj8cKlGIM"
+        chat_id = "905367741"
+
         xbet()
         ggbet()
         twobet()
@@ -365,9 +371,7 @@ def main():
 
         fourth_data = pd.read_csv("C:/Users/Re/Archive/betwinner.csv")
 
-        result_data = pd.DataFrame(columns=['Sport','Time','First book','Second book','Third book','Team №1','Team №2','First to win','Draw','Second to win','Surplus'])
 
-        res_dict = []
         all_dict = []
         first_dict = first_data.to_dict('records')
         second_dict = second_data.to_dict('records')
@@ -382,65 +386,20 @@ def main():
         for item in fourth_dict:
             all_dict.append(item)
 
-
         for item in all_dict:
-            s = item['Team №1'].find("The")
-            if s !=-1 :
-                item['Team №1'].replace("The","")
-            s = item['Team №2'].find("The")
-            if s != -1:
-                item['Team №2'].replace("The","")
-        #print(all_dict)
-        for item in all_dict:
-            val = item['Team №1']
-            for it in all_dict:
-                if it['Sport'] == item['Sport'] and it != item and similar(it['Team №1'],val)-0.85>=0.0000000001 and similar(it['Team №2'],item['Team №2'])-0.85>=0.0000000001:
-                    first_odd = float(item['First to win'])
-                    draw_odd = float(item['Draw'])
-                    sec_odd = float(item['Second to win'])
-                    firsts_odd = float(it['First to win'])
-                    draws_odd = float(it['Draw'])
-                    secs_odd = float(it['Second to win'])
-                    sure = 1.0
-                    if firsts_odd > first_odd and firsts_odd != 100000000:
-                        item['First to win'] = firsts_odd
-                        sure = sure - 1.0 / firsts_odd
-                        item['First book'] = it['First book']
-                    else:
-                        sure = sure - 1.0 / first_odd
-                    if draws_odd > draw_odd and draws_odd != 100000000:
-                        item['Draw'] = draws_odd
-                        sure = sure - 1.0 / draws_odd
-                        item['Second book'] = it['Second book']
-                    else:
-                        sure = sure - 1.0 / draw_odd
-                    if secs_odd > sec_odd and secs_odd != 100000000:
-                        item['Second to win'] = secs_odd
-                        sure = sure - 1.0 / secs_odd
-                        item['Third book'] = it['Third book']
-                    else:
-                        sure = sure - 1.0 / sec_odd
-                    item['Surplus'] = sure
-                    #print(item)
-                    all_dict.remove(it)
-
-        for item in all_dict:
-            if item['Surplus'] - 0.0 <= 0.000000000000001:
-                all_dict.remove(item)
-            print(item)
-        res_dict = []
-        for item in all_dict:
-            if item['Surplus'] - 0.0 >= 0.00000000001:
-                res_dict.append(item)
-                notification = Notify()
-                notification.title="found odd"
-                notification.message = item['Sport']+ " "+item['Time']+ " " + item['Team №1'] + " "+item['Team №2'] + " "+ item['First book'] + " "+ item['Second book'] + " "+ item['Third book']
-                notification.send()
+            res_dict.append(item)
+            message = str(1.0 / float(item['First to win'])) + " " + str(
+                1.0 / float(item['Draw'])) + " " + str(1.0 / float(item['Second to win'])) + " " + item[
+                          'Sport'] + " " + item['Time'] + " " + item['Team №1'] + " " + item[
+                          'Team №2'] + " " + item['First book'] + " " + item['Second book'] + " " + item[
+                          'Third book']
+            url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={chat_id}&text={message}"
+            print(requests.get(url).json())
 
 
-        df = pd.DataFrame.from_records(res_dict)
+        df = pd.DataFrame.from_records(all_dict)
 
         df.to_csv("C:/Users/Re/Archive/result.csv")
-        time.sleep(300)
+        time.sleep(150)
 
 main()
